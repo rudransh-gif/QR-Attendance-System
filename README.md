@@ -123,3 +123,6 @@ STU001
 ## 🎯 Conclusion
 
 This system demonstrates a scalable QR-based attendance solution using web technologies and cloud-based storage, ensuring accuracy, efficiency, and real-time logging.
+
+## Addition:
+To handle 500 concurrent scans, the system can use locking mechanisms (LockService in Apps Script) to prevent race conditions, optimize read/write operations, and queue requests. For large-scale deployment, a database like Firebase can replace Google Sheets to improve scalability and performance.
