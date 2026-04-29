@@ -4,17 +4,21 @@ A web-based QR attendance system that replaces traditional biometric systems by 
 
 ---
 
-## 🚀 Live Links
+##  Live Links
 
-* **Scanner Web App:** (paste your GitHub Pages / Netlify link)
-* **Apps Script Backend:** (paste your /exec URL)
-* **Apps Script Project:** (paste script.google.com/d/... link)
-* **Google Sheet (Database):** (paste sheet link)
-* **QR Codes Folder:** (paste Drive folder link)
+* **Scanner Web App:** (https://rudransh-gif.github.io/QR_Final_/)
+  
+* **Apps Script Backend:** https://script.google.com/macros/s/AKfycbxhdXteo1snnXNwlEW0JAmik2Nt5FkSGIvasb793IYJf404R3gzrHQgmvUhvV0L4wvt/exec
+  
+* **Apps Script Project:** https://script.google.com/u/0/home/projects/1SyrurnF-Rcw6D6pEAX1njmfuXLqKCZuuAbedBHIXnCvxdWZjwDQJzOBU/edit
+  
+* **Google Sheet (Database):** https://docs.google.com/spreadsheets/d/19tlaanbAzCvVTBLxlDC7w4_JL201LM5uDUlmXbi7bcc/edit?usp=sharing
+  
+* **QR Codes Folder:** (https://drive.google.com/drive/folders/1RP5VpF6eeDnTfu52UYCN3RpAUoIcEYbf?usp=sharing)
 
 ---
 
-## 🧠 System Architecture
+##  System Architecture
 
 ```
 Frontend (Scanner) → Apps Script API → Google Sheets
@@ -26,7 +30,7 @@ Frontend (Scanner) → Apps Script API → Google Sheets
 
 ---
 
-## 🔳 QR Code Logic
+##  QR Code Logic
 
 * Each user has a unique ID (e.g., `STU001`)
 * QR code stores plain text ID
@@ -35,7 +39,7 @@ Frontend (Scanner) → Apps Script API → Google Sheets
 
 ---
 
-## 📱 Scanner Workflow
+##  Scanner Workflow
 
 1. User opens scanner web app
 2. Camera scans QR code
@@ -46,7 +50,7 @@ Frontend (Scanner) → Apps Script API → Google Sheets
 
 ---
 
-## 🔍 Validation & Logging
+##  Validation & Logging
 
 * Checks if user exists in **Users sheet**
 * Determines last status (IN / OUT)
@@ -58,7 +62,7 @@ Frontend (Scanner) → Apps Script API → Google Sheets
 
 ---
 
-## ⚡ Features
+##  Features
 
 * Real-time QR scanning
 * Automatic IN/OUT detection
@@ -68,7 +72,7 @@ Frontend (Scanner) → Apps Script API → Google Sheets
 
 ---
 
-## ⚠️ Challenges & Solutions
+##  Challenges & Solutions
 
 | Challenge                     | Solution                       |
 | ----------------------------- | ------------------------------ |
