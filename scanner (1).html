@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>QR Entry Scanner</title>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg:#080810;--surface:#10101c;--card:#14141f;--border:#24243a;
+    --accent:#7c5cfc;--accent2:#a78bfa;--green:#00e676;--red:#ff4b6a;
+    --yellow:#ffd740;--text:#e8e8f4;--muted:#64648a;--radius:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);
+    min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+    padding:20px 16px 40px;overflow-x:hidden;}
+
+  header{width:100%;max-width:440px;display:flex;align-items:center;
+    justify-content:space-between;margin-bottom:24px;}
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;
+    color:var(--accent2);text-transform:uppercase;}
+  .brand-title{font-size:20px;font-weight:800;line-height:1;}
+  .status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 12px var(--green);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+
+  .camera-card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);
+    border-radius:20px;overflow:hidden;position:relative;aspect-ratio:1/1;margin-bottom:20px;}
+  video{width:100%;height:100%;object-fit:cover;display:block;}
+  .scan-overlay{position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;pointer-events:none;}
+  .scan-frame{width:200px;height:200px;position:relative;}
+  .scan-frame::before,.scan-frame::after,
+  .scan-frame span::before,.scan-frame span::after{
+    content:'';position:absolute;width:28px;height:28px;
+    border-color:var(--accent2);border-style:solid;}
+  .scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+  .scan-frame::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+  .scan-frame span::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+  .scan-frame span::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+  .laser{position:absolute;left:6px;right:6px;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    top:6px;animation:laser-scan 2s ease-in-out infinite;border-radius:2px;}
+  @keyframes laser-scan{0%{top:6px;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:calc(100% - 8px);opacity:0;}}
+
+  .cam-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;background:var(--card);color:var(--muted);}
+  .cam-icon{font-size:48px;opacity:.3;}
+  .cam-placeholder p{font-size:13px;text-align:center;max-width:220px;line-height:1.5;}
+
+  #result-banner{width:100%;max-width:440px;border-radius:var(--radius);padding:18px 20px;
+    font-size:15px;font-weight:700;text-align:center;min-height:58px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:all .35s cubic-bezier(.34,1.56,.64,1);margin-bottom:16px;
+    border:1px solid transparent;opacity:0;transform:translateY(6px);}
+  #result-banner.show{opacity:1;transform:translateY(0);}
+  #result-banner.success{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:var(--green);}
+  #result-banner.error{background:rgba(255,75,106,.1);border-color:rgba(255,75,106,.3);color:var(--red);}
+  #result-banner.cooldown{background:rgba(255,215,64,.1);border-color:rgba(255,215,64,.3);color:var(--yellow);}
+  #result-banner.loading{background:rgba(124,92,252,.1);border-color:rgba(124,92,252,.3);color:var(--accent2);}
+
+  .controls{width:100%;max-width:440px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  .btn{padding:13px 16px;border-radius:12px;border:1px solid var(--border);
+    font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;
+    transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-start{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn-start:hover:not(:disabled){background:var(--accent2);transform:translateY(-1px);}
+  .btn-stop{background:transparent;color:var(--muted);}
+  .btn-stop:hover{color:var(--red);border-color:var(--red);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+
+  .select-wrap{width:100%;max-width:440px;margin-bottom:20px;}
+  select{width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);
+    padding:11px 14px;border-radius:10px;font-family:'Space Mono',monospace;
+    font-size:12px;appearance:none;cursor:pointer;}
+  select:focus{outline:none;border-color:var(--accent);}
+
+  .log-section{width:100%;max-width:440px;}
+  .log-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;
+    color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+  #log-feed{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;}
+  .log-item{background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;display:flex;align-items:center;justify-content:space-between;
+    font-size:13px;animation:slideIn .3s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+  .log-name{font-weight:700;}
+  .log-badge{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+    padding:3px 10px;border-radius:20px;letter-spacing:1px;}
+  .badge-in{background:rgba(0,230,118,.15);color:var(--green);}
+  .badge-out{background:rgba(255,75,106,.15);color:var(--red);}
+  .badge-err{background:rgba(255,215,64,.15);color:var(--yellow);}
+  .log-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;}
+
+  /* Config warning */
+  #config-warning{width:100%;max-width:440px;background:rgba(255,215,64,.08);
+    border:1px solid rgba(255,215,64,.25);border-radius:12px;padding:14px 18px;
+    font-size:13px;color:var(--yellow);margin-bottom:20px;display:none;}
+  #config-warning strong{display:block;margin-bottom:4px;}
+  code{font-family:'Space Mono',monospace;background:rgba(255,255,255,.06);
+    padding:2px 6px;border-radius:4px;font-size:11px;word-break:break-all;}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);
+    border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     🔴 CHANGE THIS LINE — paste your Apps Script URL below
+     ══════════════════════════════════════════════════════════ -->
+<script>
+  const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxhdXteo1snnXNwlEW0JAmik2Nt5FkSGIvasb793IYJf404R3gzrHQgmvUhvV0L4wvt/exec";
+  //  Example:
+  //  const BACKEND_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+
+  const FRONTEND_COOLDOWN_MS = 10000;
+</script>
+<!-- ══════════════════════════════════════════════════════════ -->
+
+<header>
+  <div class="brand">
+    <span class="brand-label">Entry Logger</span>
+    <span class="brand-title">QR Scanner</span>
+  </div>
+  <div class="status-dot"></div>
+</header>
+
+<div id="config-warning">
+  <strong>⚠️ Backend not configured</strong>
+  Open scanner.html and replace <code>YOUR_APPS_SCRIPT_WEB_APP_URL_HERE</code> with your deployed Apps Script URL.
+</div>
+
+<div class="camera-card">
+  <div id="video-container">
+    <div class="cam-placeholder" id="placeholder">
+      <div class="cam-icon">📷</div>
+      <p>Press <strong>Start Scanner</strong> to open camera</p>
+    </div>
+    <video id="preview" autoplay playsinline muted style="display:none;"></video>
+    <div class="scan-overlay" id="scan-overlay" style="display:none;">
+      <div class="scan-frame"><span></span><div class="laser"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="result-banner"></div>
+
+<div class="select-wrap">
+  <select id="camera-select"><option value="">— Select camera —</option></select>
+</div>
+
+<div class="controls">
+  <button class="btn btn-start" id="btn-start" onclick="startScanner()">▶ Start Scanner</button>
+  <button class="btn btn-stop"  id="btn-stop"  onclick="stopScanner()" disabled>■ Stop</button>
+</div>
+
+<div class="log-section">
+  <div class="log-label">Recent Scans</div>
+  <div id="log-feed"></div>
+</div>
+
+<script>
+let codeReader = null;
+let scanning   = false;
+let lastScanTime = 0;
+const processedSet = new Set();
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (BACKEND_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE") {
+    document.getElementById('config-warning').style.display = 'block';
+  }
+  loadCameras();
+});
+
+async function loadCameras() {
+  try {
+    const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+    const sel = document.getElementById('camera-select');
+    sel.innerHTML = '';
+    if (!devices.length) { sel.innerHTML = '<option>No cameras found</option>'; return; }
+    devices.forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.text  = d.label || 'Camera ' + (i + 1);
+      if (d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('rear')) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch (err) {
+    showBanner('error', '❌ Camera permission denied');
+  }
+}
+
+async function startScanner() {
+  if (scanning) return;
+  const deviceId = document.getElementById('camera-select').value;
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled  = false;
+  document.getElementById('placeholder').style.display  = 'none';
+  document.getElementById('preview').style.display      = 'block';
+  document.getElementById('scan-overlay').style.display = 'flex';
+  codeReader = new ZXing.BrowserMultiFormatReader();
+  scanning   = true;
+  try {
+    await codeReader.decodeFromVideoDevice(deviceId || undefined, 'preview', (result) => {
+      if (result) handleScan(result.getText());
+    });
+  } catch (err) {
+    showBanner('error', '❌ Could not open camera: ' + err.message);
+    stopScanner();
+  }
+}
+
+function stopScanner() {
+  if (codeReader) codeReader.reset();
+  scanning = false;
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled  = true;
+  document.getElementById('placeholder').style.display  = 'flex';
+  document.getElementById('preview').style.display      = 'none';
+  document.getElementById('scan-overlay').style.display = 'none';
+}
+
+async function handleScan(rawText) {
+  const now = Date.now();
+  if (processedSet.has(rawText) && now - lastScanTime < FRONTEND_COOLDOWN_MS) return;
+  processedSet.add(rawText);
+  lastScanTime = now;
+  setTimeout(() => processedSet.delete(rawText), FRONTEND_COOLDOWN_MS);
+
+  showBanner('loading', '<div class="spinner"></div> Verifying…');
+
+  try {
+    // ── USE GET REQUEST — avoids CORS preflight entirely ──
+    const url = BACKEND_URL + "?id=" + encodeURIComponent(rawText);
+    const res  = await fetch(url, { method: "GET" });
+
+    if (!res.ok) throw new Error("HTTP " + res.status);
+
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      showBanner('success', '✅ ' + data.message);
+      addLog(data.name, data.entry, 'ok');
+    } else if (data.status === 'cooldown') {
+      showBanner('cooldown', '⏳ ' + data.message);
+    } else {
+      showBanner('error', '⚠️ ' + (data.message || 'Unknown error'));
+      addLog(rawText, 'ERR', 'err');
+    }
+  } catch (err) {
+    showBanner('error', '🔌 Network error: ' + err.message);
+  }
+}
+
+function showBanner(type, html) {
+  const el = document.getElementById('result-banner');
+  el.className = 'show ' + type;
+  el.innerHTML = html;
+  clearTimeout(el._timer);
+  if (type !== 'loading') el._timer = setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function addLog(name, status, kind) {
+  const feed = document.getElementById('log-feed');
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  const badgeClass = kind === 'err' ? 'badge-err' : status === 'IN' ? 'badge-in' : 'badge-out';
+  item.innerHTML = '<div><div class="log-name">' + name + '</div><div class="log-time">' + new Date().toLocaleTimeString() + '</div></div><span class="log-badge ' + badgeClass + '">' + status + '</span>';
+  feed.prepend(item);
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+</script>
+</body>
+</html>
