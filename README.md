@@ -11,6 +11,8 @@ A web-based QR attendance system that replaces traditional biometric systems by 
 * **Apps Script Backend:** https://script.google.com/macros/s/AKfycbxhdXteo1snnXNwlEW0JAmik2Nt5FkSGIvasb793IYJf404R3gzrHQgmvUhvV0L4wvt/exec
   
 * **Apps Script Project:** https://script.google.com/u/0/home/projects/1SyrurnF-Rcw6D6pEAX1njmfuXLqKCZuuAbedBHIXnCvxdWZjwDQJzOBU/edit
+
+Note: The Apps Script project is bound to the Google Sheet. Access to the sheet allows evaluation of the backend logic.
   
 * **Google Sheet (Database):** https://docs.google.com/spreadsheets/d/19tlaanbAzCvVTBLxlDC7w4_JL201LM5uDUlmXbi7bcc/edit?usp=sharing
   
